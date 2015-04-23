@@ -44,6 +44,14 @@ module ActiveMerchant #:nodoc:
         commit('sale', money, post)
       end
 
+      def purchase_with_magnetic_stripe_data(money, options = {})
+        post = {}
+        add_processor(post, options)
+        add_encrypted_swipe_data(post, options)
+        add_amount(post, money, options)
+        commit('sale', money, post)
+      end
+
       def capture(money, authorization, options = {})
         post = {}
         post.merge!(:transactionid => authorization)
@@ -56,6 +64,12 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+
+      def add_processor(post, options)
+        if options[:processor_id].present?
+          post['processor_id'] = options[:processor_id]
+        end
+      end
 
       def add_customer_data(post, options)
         post['firstname'] = options[:billing_address][:first_name]
@@ -78,6 +92,13 @@ module ActiveMerchant #:nodoc:
        post['cvv'] = creditcard.verification_value
        post['ccnumber'] = creditcard.number
        post['ccexp'] =  "#{sprintf("%02d", creditcard.month)}#{"#{creditcard.year}"[-2, 2]}"
+      end
+
+      def add_encrypted_swipe_data(post, options)
+        post[:encrypted_track_1] = options[:track_1]
+        post[:encrypted_track_2] = options[:track_2]
+        post[:encrypted_track_3] = options[:track_3]
+        post[:encrypted_ksn] = options[:encrypted_ksn]
       end
 
       def commit(action, money, parameters={})
